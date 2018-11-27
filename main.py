@@ -15,7 +15,7 @@ async def on_message(message):
         await client.send_message(message.channel, "ANIKI <:HandsUp:510384211346063360>")
     elif message.content.startswith("!music"):
         await client.send_message(message.channel, "qwe")
-    elif message.content("!f"):
+    elif message.content.startswith("!f"):
         await client.send_message(message.channel, "<:PepeHands:517047131329003530> BILLY <:PepeHands:517047131329003530> BILLY https://youtu.be/ISJlNRRvT3g")
 
 with open("key.txt", "r") as keyfile:
