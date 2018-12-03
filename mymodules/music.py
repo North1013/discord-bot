@@ -34,6 +34,7 @@ class Music:
 
     @commands.command(pass_context=True)
     async def play(self, ctx, url):
+        # TODO merge queue and play, by checking for already playing
         server = ctx.message.server
         voice_client = self.client.voice_client_in(server)
         player = await voice_client.create_ytdl_player(url, after=lambda: self.check_queue(server.id))
