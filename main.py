@@ -3,57 +3,87 @@
 import asyncio
 import logging
 import discord
+import os
+import yaml
+import commandscreator
 
 from discord.ext import commands
 from datetime import datetime
 
-# from mymodules.respond import message_respond
-from mymodules.crisis.crisis import crisis_information
+# from cogs.crisis.crisis import crisis_information
+
+# Create commands from data/commands.json
+try:
+    commandscreator.create_commands()
+except:
+    print("Couldn't create the commands")
+
+PATH = "/root/discord-bot/"
+SETTINGS = PATH + "data/settings.yaml"
+DISCORD_LOG = PATH + "data/discord.log"
+MESSAGE_LOG = PATH + "data/message.log"
 
 LOGGER = logging.getLogger('discord')
-LOGGER.setLevel(logging.DEBUG)
-HANDLER = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w')
+LOGGER.setLevel(logging.WARNING)
+HANDLER = logging.FileHandler(filename=DISCORD_LOG, encoding='utf-8', mode='w')
 HANDLER.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
 LOGGER.addHandler(HANDLER)
 
-client = commands.Bot(command_prefix = "!")
+bot = commands.Bot(command_prefix=commands.when_mentioned_or("!"))
 
-extensions =  ["mymodules.commands", "mymodules.music"]
+extensions =  [
+        "cogs.advanced_commands",
+        "cogs.commands",
+        "cogs.crisis",
+        "cogs.cryptoprice.cryptoprice",
+        "cogs.music"
+        ]
 
-@client.command()
-async def load(extension):
-    try:
-        client.load_extension(extension)
-    except Exception as error:
-        print("{} cannto be loaded. [{}]".format(extension, error))
+# @bot.command()
+# async def load(extension):
+#     try:
+#         bot.load_extension(extension)
+#     except Exception as error:
+#         print("{} cannot be loaded. [{}]".format(extension, error))
+# 
+# @bot.command()
+# async def unload(extension):
+#     try:
+#         bot.unload_extension(extension)
+#     except Exception as error:
+#         print("{} cannot be unloaded. [{}]".format(extension, error))
 
-@client.command()
-async def unload(extension):
-    try:
-        client.unload_extension(extension)
-    except Exception as error:
-        print("{} cannto be unloaded. [{}]".format(extension, error))
+# @bot.event
+# async def on_message(message):
+#     with open(MESSAGE_LOG, "a+") as f:
+#         f.write("Message from {0.author} at {0.created_at}: {0.content}\n".format(message))
 
-@client.event
+@bot.event
 async def on_ready():
-    print('Logged in as:\n{0} (ID: {0.id})'.format(client.user))
+    print('Logged in as:\n{0} (ID: {0.id})'.format(bot.user))
+    print('Discord.py version: ' + discord.__version__)
+    await bot.change_presence(activity=discord.Game(name="example123"))
 
-async def at_time():
-    while True:
-        now = datetime.now().strftime("%H")
-        await asyncio.sleep(300)
-        if now == "07":
-            await client.send_message(client.get_channel("232917647250030592"), crisis_information())
+# async def at_time():
+#     while True:
+#         now = datetime.now().strftime("%H")
+#         await asyncio.sleep(300)
+#         if now == "07":
+#             await bot.send_message(bot.get_channel(232917647250030592), crisis_information())
+
+def check_folder():
+    if not os.path.exists(PATH):
+        os.mkdir(PATH)
 
 if __name__ == "__main__":
     for extension in extensions:
         try:
-            client.load_extension(extension)
+            bot.load_extension(extension)
         except Exception as error:
             print("{} cannot be loaded. [{}]".format(extension, error))
     
-    asyncio.get_event_loop().create_task(at_time())
-   
-    with open("key.txt", "r") as keyfile:
-        key = keyfile.read().rstrip("\n")
-        client.run(key)
+#    asyncio.get_event_loop().create_task(at_time())
+    
+    check_folder() 
+    data = yaml.safe_load(open(SETTINGS))
+    bot.run(data['key'], bot=True, reconnect=True)
