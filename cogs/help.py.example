@@ -1,0 +1,38 @@
+import discord
+from discord.ext import commands
+
+class Help:
+    def __init__(self, bot):
+        self.bot = bot
+
+    @commands.command()
+    async def help(self, ctx):
+        """Prints embedded message for a help message"""
+        # "normal" commands
+        embed = discord.Embed(
+                colour = discord.Colour.orange()
+                )
+        embed.set_author(name="Help")
+        embed.add_field(name="!ddg", value="DDG search, also valid: duckduckgo/search", inline=False)
+        embed.add_field(name="!wolframalpha", value="wolframalpha search, also valid: wolfram/math", inline=False)
+        embed.add_field(name="!ping", value="Returns Pong!", inline=False)
+        embed.add_field(name="!cprice", value="Coinmarketcap search, only top 100 coins", inline=False)
+        await ctx.send(embed=embed)
+
+        # music commands
+        embed = discord.Embed(
+                colour = discord.Colour.blue()
+                )
+        embed.set_author(name="Music Help")
+        embed.add_field(name="!join", value="Joins the current voice channel you're in", inline=False)
+        embed.add_field(name="!leave", value="Leaves the current voice channel you're in", inline=False)
+        embed.add_field(name="!play", value="Plays a youtube song, use queue if already playing", inline=False)
+        embed.add_field(name="!queue", value="Queues a youtube song to the", inline=False)
+        embed.add_field(name="!pause", value="Pauses the currently playing music", inline=False)
+        embed.add_field(name="!stop", value="Stops the currently playing music", inline=False)
+        embed.add_field(name="!resume", value="Resumes the currently playing music", inline=False)
+        await ctx.send(embed=embed)
+
+def setup(bot):
+    bot.remove_command("help")
+    bot.add_cog(Help(bot))

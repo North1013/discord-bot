@@ -1,110 +1,108 @@
-import urllib.request
+import asyncio
+import youtube_dl
+import yaml
 import discord
 from discord.ext import commands
 from bs4 import BeautifulSoup as bs
 
+
+
+ytdl_format_options = {
+    'format': 'bestaudio/best',
+    'outtmpl': '%(extractor)s-%(id)s-%(title)s.%(ext)s',
+    'restrictfilenames': True,
+    'noplaylist': True,
+    'nocheckcertificate': True,
+    'ignoreerrors': False,
+    'logtostderr': False,
+    'quiet': True,
+    'no_warnings': True,
+    'default_search': 'auto',
+    'source_address': '0.0.0.0' # bind to ipv4 since ipv6 addresses cause issues sometimes
+}
+
+ffmpeg_options = {
+    'options': '-vn'
+}
+
+ytdl = youtube_dl.YoutubeDL(ytdl_format_options)
+
+
+class YTDLSource(discord.PCMVolumeTransformer):
+    def __init__(self, source, *, data, volume=0.5):
+        super().__init__(source, volume)
+        self.data = data
+        self.title = data.get('title')
+        self.url = data.get('url')
+
+    @classmethod
+    async def from_url(cls, url, *, loop=None, stream=False):
+        loop = loop or asyncio.get_event_loop()
+        data = await loop.run_in_executor(None, lambda: ytdl.extract_info(url, download=not stream))
+
+        if 'entries' in data:
+            # take first item from a playlist
+            data = data['entries'][0]
+
+        filename = data['url'] if stream else ytdl.prepare_filename(data)
+        return cls(discord.FFmpegPCMAudio(filename, **ffmpeg_options), data=data)
+
 class Music:
     def __init__(self, bot):
         self.bot = bot
-        self.responses = ["You have chose one.", "You have chosen two", "You have chosen three"]
-        self.players = {}
-        self.queues = {}
-        self.links = {"link1": "", "link2": "", "link3": ""}
-
-    def check_queue(self, player_id):
-        if self.queues[player_id] != []:
-            player = self.queues[player_id].pop(0)
-            self.players[player_id] = player
-            player.start()
+        self.path = "/root/discord-bot/"
+        self.settings = self.path + "data/settings.yaml"
 
     @commands.command()
     async def join(self, ctx):
-        channel = ctx.message.author.voice.voice_channel
-        await self.bot.join_voice_channel(channel)
+        channel = ctx.message.author.voice.channel
+        if ctx.voice_client is not None:
+            return await ctx.voice_client.move_to(channel)
+        await channel.connect()
 
     @commands.command()
     async def leave(self, ctx):
-        server = ctx.message.server
-        voice_bot = self.bot.voice_bot_in(server)
-        if voice_bot:
-            await voice_bot.disconnect()
-            print("Bot disconnected from voice channel")
-        else:
-            print("Bot not in voice channel")
+        guild = ctx.message.guild
+        connected = ctx.voice_client.is_connected()
+        if connected:
+            await ctx.voice_client.disconnect()
 
     @commands.command()
-    async def play(self, ctx, url):
-        # TODO merge queue and play, by checking for already playing
-        server = ctx.message.server
-        voice_bot = self.bot.voice_bot_in(server)
-        player = await voice_bot.create_ytdl_player(url, after=lambda: self.check_queue(server.id))
-        self.players[server.id] = player
-        player.start()
-        await ctx.send("Music playing")
-
-    @commands.command()
-    async def queue(self, ctx, url):
-        server = ctx.message.server
-        voice_bot = self.bot.voice_bot_in(server)
-        player = await voice_bot.create_ytdl_player(url, after=lambda: self.check_queue(server.id))
-
-        if server.id in self.queues:
-            self.queues[server.id].append(player)
-        else:
-            self.queues[server.id] = [player]
-        print(self.queues)
-        await ctx.send("Music queued")
+    async def play(self, ctx, *, url):
+        async with ctx.typing():
+            if url == "mpd":
+                data = yaml.safe_load(open(self.settings))
+                player = await YTDLSource.from_url(data['mpd_url'], loop=self.bot.loop, stream=True)
+            else:
+                player = await YTDLSource.from_url(url, loop=self.bot.loop, stream=True)
+            ctx.voice_client.play(player, after=lambda e: print("Player error: %s" % e) if e else None)
+        await ctx.send("Now playing: {}".format(player.title))
 
     @commands.command()
     async def pause(self, ctx):
-        server = ctx.message.server
-        self.players[server.id].pause()
+        ctx.voice_client.pause()
         await ctx.send("Music paused")
- 
+        
     @commands.command()
     async def stop(self, ctx):
-        server = ctx.message.server
-        self.players[server.id].stop()
+        ctx.voice_client.stop()
         await ctx.send("Music stopped")
 
     @commands.command()
     async def resume(self, ctx):
-        server = ctx.message.server
-        self.players[server.id].resume()
+        ctx.voice_client.resume()
         await ctx.send("Music resumed")
 
-    @commands.command()
-    async def search(self, ctx, *, args):
-        link = "https://www.youtube.com/results?search_query={}".format(args.replace(" ", "+"))
-        response = urllib.request.urlopen(link)
-        html = response.read()
-        soup = bs(html, features="html.parser")
-        counter = 0
-        for vid in soup.findAll(attrs={'class': 'yt-uix-tile-link'}):
-            if ("list" not in vid['href']) and ("user" not in vid['href']) and ("googlead" not in vid['href']):
-                counter += 1
-                self.links["link{}".format(counter)] = 'https://www.youtube.com' + vid['href']
-                if counter == 3:
-                    await ctx.send("1. {}\n2. {}\n3. {}".format(self.links["link1"], self.links["link2"], self.links["link3"]))
-                    break
-
-    @commands.command()
-    async def searchplay(self, ctx, *, args):
-        link = "https://www.youtube.com/results?search_query={}".format(args.replace(" ", "+"))
-        response = urllib.request.urlopen(link)
-        html = response.read()
-        soup = bs(html, features="html.parser")
-        counter = 0
-        for vid in soup.findAll(attrs={'class': 'yt-uix-tile-link'}):
-            if ("list" not in vid['href']) and ("user" not in vid['href']) and ("googlead" not in vid['href']):
-                video = "https://www.youtube.com" + vid['href']
-                server = ctx.message.server
-                voice_bot = self.bot.voice_bot_in(server)
-                player = await voice_bot.create_ytdl_player(video, after=lambda: self.check_queue(server.id))
-                self.players[server.id] = player
-                player.start()
-                await ctx.send("Now playing {}".format(video))
-                break
+    @play.before_invoke
+    async def ensure_voice(self, ctx):
+        if ctx.voice_client is None:
+            if ctx.author.voice:
+                await ctx.author.voice.channel.connect()
+            else:
+                await ctx.send("You are not connected to a voice channel.")
+                raise commands.CommandError("Author not connected to a voice channel.")
+        elif ctx.voice_client.is_playing():
+            ctx.voice_client.stop()
 
 def setup(bot):
     bot.add_cog(Music(bot))

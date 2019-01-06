@@ -1,0 +1,12 @@
+{
+  "Command": [
+    {
+      "command": "test",
+      "content": "this is a test commands"
+    },
+    {
+      "command": "example",
+      "content": "this is an example command"
+    }
+  ]
+}

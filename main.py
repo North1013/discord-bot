@@ -20,6 +20,8 @@ except:
 
 PATH = "/root/discord-bot/"
 SETTINGS = PATH + "data/settings.yaml"
+DATA = yaml.safe_load(open(SETTINGS))
+
 DISCORD_LOG = PATH + "data/discord.log"
 MESSAGE_LOG = PATH + "data/message.log"
 
@@ -36,7 +38,12 @@ extensions =  [
         "cogs.commands",
         "cogs.crisis",
         "cogs.cryptoprice.cryptoprice",
-        "cogs.music"
+        "cogs.quiz",
+        "cogs.music",
+        "cogs.duckduckgo",
+        "cogs.wikipedia",
+        "cogs.wolframalpha",
+        "cogs.help"
         ]
 
 # @bot.command()
@@ -62,7 +69,7 @@ extensions =  [
 async def on_ready():
     print('Logged in as:\n{0} (ID: {0.id})'.format(bot.user))
     print('Discord.py version: ' + discord.__version__)
-    await bot.change_presence(activity=discord.Game(name="example123"))
+    await bot.change_presence(activity=discord.Game(name=DATA["game"]))
 
 # async def at_time():
 #     while True:
@@ -85,5 +92,4 @@ if __name__ == "__main__":
 #    asyncio.get_event_loop().create_task(at_time())
     
     check_folder() 
-    data = yaml.safe_load(open(SETTINGS))
-    bot.run(data['key'], bot=True, reconnect=True)
+    bot.run(DATA['key'], bot=True, reconnect=True)
