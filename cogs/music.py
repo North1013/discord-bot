@@ -53,12 +53,12 @@ class Music:
         self.path = "/root/discord-bot/"
         self.settings = self.path + "data/settings.yaml"
 
-    @commands.command()
-    async def join(self, ctx):
-        channel = ctx.message.author.voice.channel
-        if ctx.voice_client is not None:
-            return await ctx.voice_client.move_to(channel)
-        await channel.connect()
+#    @commands.command()
+#    async def join(self, ctx):
+#        channel = ctx.message.author.voice.channel
+#        if ctx.voice_client is not None:
+#            return await ctx.voice_client.move_to(channel)
+#        await channel.connect()
 
     @commands.command()
     async def leave(self, ctx):
@@ -69,6 +69,10 @@ class Music:
 
     @commands.command()
     async def play(self, ctx, *, url):
+        channel = ctx.message.author.voice.channel
+        if ctx.voice_client is not None:
+            return await ctx.voice_client.move_to(channel)
+        await channel.connect()
         async with ctx.typing():
             if url == "mpd":
                 data = yaml.safe_load(open(self.settings))

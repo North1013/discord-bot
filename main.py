@@ -5,18 +5,11 @@ import logging
 import discord
 import os
 import yaml
-import commandscreator
 
 from discord.ext import commands
 from datetime import datetime
 
 # from cogs.crisis.crisis import crisis_information
-
-# Create commands from data/commands.json
-try:
-    commandscreator.create_commands()
-except:
-    print("Couldn't create the commands")
 
 PATH = "/root/discord-bot/"
 SETTINGS = PATH + "data/settings.yaml"
@@ -31,17 +24,17 @@ HANDLER = logging.FileHandler(filename=DISCORD_LOG, encoding='utf-8', mode='w')
 HANDLER.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
 LOGGER.addHandler(HANDLER)
 
-bot = commands.Bot(command_prefix=commands.when_mentioned_or("!"))
+bot = commands.Bot(command_prefix=commands.when_mentioned_or("!"), case_insensitive=True)
 
 extensions =  [
         "cogs.advanced_commands",
         "cogs.commands",
-        "cogs.crisis",
         "cogs.cryptoprice.cryptoprice",
         "cogs.quiz",
         "cogs.music",
         "cogs.duckduckgo",
         "cogs.wikipedia",
+        "cogs.crisis",
         "cogs.wolframalpha",
         "cogs.help"
         ]
@@ -60,23 +53,11 @@ extensions =  [
 #     except Exception as error:
 #         print("{} cannot be unloaded. [{}]".format(extension, error))
 
-# @bot.event
-# async def on_message(message):
-#     with open(MESSAGE_LOG, "a+") as f:
-#         f.write("Message from {0.author} at {0.created_at}: {0.content}\n".format(message))
-
 @bot.event
 async def on_ready():
     print('Logged in as:\n{0} (ID: {0.id})'.format(bot.user))
     print('Discord.py version: ' + discord.__version__)
     await bot.change_presence(activity=discord.Game(name=DATA["game"]))
-
-# async def at_time():
-#     while True:
-#         now = datetime.now().strftime("%H")
-#         await asyncio.sleep(300)
-#         if now == "07":
-#             await bot.send_message(bot.get_channel(232917647250030592), crisis_information())
 
 def check_folder():
     if not os.path.exists(PATH):
