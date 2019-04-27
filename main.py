@@ -28,7 +28,6 @@ bot = commands.Bot(command_prefix=commands.when_mentioned_or("!"), case_insensit
 
 extensions =  [
         "cogs.advanced_commands",
-        "cogs.commands",
         "cogs.cryptoprice.cryptoprice",
         "cogs.quiz",
         "cogs.music",
@@ -36,7 +35,8 @@ extensions =  [
         "cogs.wikipedia",
         "cogs.crisis",
         "cogs.wolframalpha",
-        "cogs.help"
+        "cogs.help",
+        "cogs.date"
         ]
 
 # @bot.command()
